@@ -2,6 +2,9 @@
 
 A lightweight web dashboard for monitoring FiveM server activity in real-time, with historical player tracking and analytics.
 
+<img width="1902" height="956" alt="image" src="https://github.com/user-attachments/assets/ada9e318-f8f6-4e1b-9cdb-baf3c8a30e3c" />
+
+
 ## Features
 
 - **Live Server Info** - Real-time player count, server details, and connection info
