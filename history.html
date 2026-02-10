@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iMe RP - Player History & Stats</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        dark: '#0f172a',
+                        darker: '#020617',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glow {
+            box-shadow: 0 0 40px rgba(99, 102, 241, 0.3);
+        }
+
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 3px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.6);
+        }
+
+        .custom-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+        }
+
+        .stat-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.2);
+        }
+    </style>
+</head>
+
+<body class="bg-darker min-h-screen text-white">
+    <div class="relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-purple-600/20"></div>
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(99,102,241,0.15),transparent_50%)]"></div>
+
+        <div class="container mx-auto px-4 py-6 relative">
+            <!-- Header with Navigation -->
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-4">
+                    <div class="glass rounded-lg p-1 glow">
+                        <img src="https://frontend.cfx-services.net/api/servers/icon/zrvmg4/-1132135871.png"
+                            alt="Server" class="w-12 h-12 rounded-lg">
+                    </div>
+                    <div>
+                        <h1
+                            class="text-2xl font-bold bg-gradient-to-r from-white via-indigo-200 to-primary bg-clip-text text-transparent">
+                            iMe RP - History & Stats
+                        </h1>
+                        <p class="text-gray-400 text-sm">Player activity analytics</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <a href="index.html"
+                        class="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Live View
+                    </a>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading" class="glass rounded-xl p-8 text-center">
+                <div
+                    class="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4">
+                </div>
+                <p class="text-gray-400">Loading history data...</p>
+            </div>
+
+            <!-- Main Content (hidden until loaded) -->
+            <div id="content" class="hidden space-y-4">
+                <!-- Quick Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="stat-card glass rounded-xl p-4">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-green-500/20 rounded-lg">
+                                <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path
+                                        d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400">Peak Players</div>
+                                <div class="text-xl font-bold text-green-400" id="peakPlayers">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card glass rounded-xl p-4">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-blue-500/20 rounded-lg">
+                                <svg class="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400">Avg Players</div>
+                                <div class="text-xl font-bold text-blue-400" id="avgPlayers">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card glass rounded-xl p-4">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-purple-500/20 rounded-lg">
+                                <svg class="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path
+                                        d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400">Total Entries</div>
+                                <div class="text-xl font-bold text-purple-400" id="totalEntries">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card glass rounded-xl p-4">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-yellow-500/20 rounded-lg">
+                                <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400">Data Range</div>
+                                <div class="text-sm font-bold text-yellow-400" id="dataRange">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Player Count Chart -->
+                <div class="glass rounded-xl p-4">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                            <path
+                                d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                        </svg>
+                        Player Count History
+                    </h2>
+                    <div class="h-64">
+                        <canvas id="playerChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Top Players Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <!-- Player Activity Timeline -->
+                    <div class="glass rounded-xl p-4">
+                        <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Player Activity Timeline
+                        </h2>
+                        <div class="mb-3 flex gap-2">
+                            <div class="relative flex-1">
+                                <input type="text" id="activitySearch" placeholder="Search player name..."
+                                    class="w-full bg-darker/70 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary">
+                                <div id="playerSuggestions"
+                                    class="absolute z-10 w-full bg-dark border border-gray-700 rounded-lg mt-1 max-h-40 overflow-y-auto hidden custom-scroll">
+                                </div>
+                            </div>
+                        </div>
+                        <div id="selectedPlayerInfo" class="mb-3 hidden">
+                            <div class="flex items-center justify-between bg-primary/20 rounded-lg px-3 py-2">
+                                <span id="selectedPlayerName" class="font-medium text-primary"></span>
+                                <div class="flex items-center gap-3 text-sm">
+                                    <span class="text-gray-400">Total: <span id="selectedPlayerTime"
+                                            class="text-green-400 font-mono"></span></span>
+                                    <button id="clearPlayer" class="text-gray-400 hover:text-white transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="h-48">
+                            <canvas id="activityChart"></canvas>
+                        </div>
+                        <p id="activityHint" class="text-gray-500 text-xs mt-2 text-center">Search for a player to see
+                            their activity timeline</p>
+                    </div>
+
+                    <!-- Player Ping History -->
+                    <div class="glass rounded-xl p-4">
+                        <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Player Ping Stats
+                        </h2>
+                        <div class="mb-3">
+                            <input type="text" id="pingSearch" placeholder="Search player name..."
+                                class="w-full bg-darker/70 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary">
+                        </div>
+                        <div id="pingHistory" class="space-y-2 custom-scroll max-h-64 overflow-y-auto">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Sessions -->
+                <div class="glass rounded-xl p-4">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z"
+                                clip-rule="evenodd" />
+                        </svg>
+                        Recent Log Entries
+                    </h2>
+                    <div id="recentEntries" class="space-y-1 custom-scroll max-h-48 overflow-y-auto text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <!-- No Data State -->
+            <div id="noData" class="hidden glass rounded-xl p-8 text-center">
+                <div class="text-6xl mb-4">📊</div>
+                <h2 class="text-xl font-bold mb-2">No History Data Yet</h2>
+                <p class="text-gray-400 mb-4">Run the fetch.php script to start collecting data.</p>
+                <code class="bg-darker px-4 py-2 rounded-lg text-sm text-gray-300">php fetch.php</code>
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center text-gray-600 text-xs mt-6">
+                <span class="text-primary font-semibold">FiveM Server DB</span> - xppaicyber
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logData = [];
+        let playerChart = null;
+
+        async function loadData() {
+            try {
+                const response = await fetch('api.php');
+                if (!response.ok) throw new Error('No log data found');
+                logData = await response.json();
+
+                if (logData.length === 0) {
+                    showNoData();
+                    return;
+                }
+
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('content').classList.remove('hidden');
+
+                renderStats();
+                renderChart();
+                setupActivityTimeline();
+                renderPingStats();
+                renderRecentEntries();
+                setupPingSearch();
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showNoData();
+            }
+        }
+
+        function showNoData() {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('noData').classList.remove('hidden');
+        }
+
+        function renderStats() {
+            // Peak players
+            const peak = Math.max(...logData.map(e => e.clients || 0));
+            document.getElementById('peakPlayers').textContent = peak;
+
+            // Average players
+            const avg = Math.round(logData.reduce((sum, e) => sum + (e.clients || 0), 0) / logData.length);
+            document.getElementById('avgPlayers').textContent = avg;
+
+            // Total entries
+            document.getElementById('totalEntries').textContent = logData.length;
+
+            // Data range
+            const firstDate = new Date(logData[0].timestamp);
+            const lastDate = new Date(logData[logData.length - 1].timestamp);
+            const diffHours = Math.round((lastDate - firstDate) / (1000 * 60 * 60));
+            let rangeText;
+            if (diffHours < 24) {
+                rangeText = `${diffHours}h`;
+            } else {
+                rangeText = `${Math.round(diffHours / 24)}d`;
+            }
+            document.getElementById('dataRange').textContent = rangeText;
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('playerChart').getContext('2d');
+
+            // Sample data if too many points (max 100 points)
+            let chartData = logData;
+            if (logData.length > 100) {
+                const step = Math.ceil(logData.length / 100);
+                chartData = logData.filter((_, i) => i % step === 0);
+            }
+
+            const labels = chartData.map(e => {
+                const d = new Date(e.timestamp);
+                return d.toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            });
+
+            const data = chartData.map(e => e.clients || 0);
+
+            playerChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Players Online',
+                        data: data,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 1,
+                        pointHoverRadius: 5,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255,255,255,0.05)'
+                            },
+                            ticks: {
+                                color: '#9ca3af',
+                                maxTicksLimit: 8
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255,255,255,0.05)'
+                            },
+                            ticks: {
+                                color: '#9ca3af'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        let activityChart = null;
+        let allPlayerNames = [];
+
+        function setupActivityTimeline() {
+            // Build list of all unique player names
+            const playerSet = new Set();
+            logData.forEach(entry => {
+                (entry.players || []).forEach(player => {
+                    playerSet.add(player.name);
+                });
+            });
+            allPlayerNames = Array.from(playerSet).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+
+            const searchInput = document.getElementById('activitySearch');
+            const suggestionsDiv = document.getElementById('playerSuggestions');
+            const clearBtn = document.getElementById('clearPlayer');
+
+            // Search input handler with autocomplete
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                if (term.length < 1) {
+                    suggestionsDiv.classList.add('hidden');
+                    return;
+                }
+
+                const matches = allPlayerNames.filter(name =>
+                    name.toLowerCase().includes(term)
+                ).slice(0, 10);
+
+                if (matches.length === 0) {
+                    suggestionsDiv.classList.add('hidden');
+                    return;
+                }
+
+                suggestionsDiv.innerHTML = '';
+                matches.forEach(name => {
+                    const div = document.createElement('div');
+                    div.className = 'px-3 py-2 hover:bg-primary/20 cursor-pointer text-sm transition-colors';
+                    div.textContent = name;
+                    div.addEventListener('click', () => {
+                        selectPlayer(name);
+                        suggestionsDiv.classList.add('hidden');
+                        searchInput.value = '';
+                    });
+                    suggestionsDiv.appendChild(div);
+                });
+                suggestionsDiv.classList.remove('hidden');
+            });
+
+            // Hide suggestions on blur (with delay for click)
+            searchInput.addEventListener('blur', () => {
+                setTimeout(() => suggestionsDiv.classList.add('hidden'), 200);
+            });
+
+            // Clear button
+            clearBtn.addEventListener('click', () => {
+                clearActivityChart();
+            });
+
+            // Initialize empty chart
+            initActivityChart();
+        }
+
+        function initActivityChart() {
+            const ctx = document.getElementById('activityChart').getContext('2d');
+            activityChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Online',
+                        data: [],
+                        backgroundColor: 'rgba(34, 197, 94, 0.6)',
+                        borderColor: '#22c55e',
+                        borderWidth: 1,
+                        borderRadius: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ctx.raw === 1 ? 'Online' : 'Offline'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: {
+                                color: '#9ca3af',
+                                maxTicksLimit: 10,
+                                maxRotation: 45
+                            }
+                        },
+                        y: {
+                            display: false,
+                            beginAtZero: true,
+                            max: 1
+                        }
+                    }
+                }
+            });
+        }
+
+        function selectPlayer(playerName) {
+            // Show player info
+            document.getElementById('selectedPlayerInfo').classList.remove('hidden');
+            document.getElementById('selectedPlayerName').textContent = playerName;
+            document.getElementById('activityHint').classList.add('hidden');
+
+            // Calculate player's activity data
+            let chartData = logData;
+            // Sample if too many data points
+            if (logData.length > 100) {
+                const step = Math.ceil(logData.length / 100);
+                chartData = logData.filter((_, i) => i % step === 0);
+            }
+
+            const labels = chartData.map(e => {
+                const d = new Date(e.timestamp);
+                return d.toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            });
+
+            const data = chartData.map(entry => {
+                const isOnline = (entry.players || []).some(p => p.name === playerName);
+                return isOnline ? 1 : 0;
+            });
+
+            // Calculate total time online
+            const onlineCount = logData.filter(entry =>
+                (entry.players || []).some(p => p.name === playerName)
+            ).length;
+            const minutes = onlineCount * 5; // 5-minute intervals
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+            document.getElementById('selectedPlayerTime').textContent = timeStr;
+
+            // Update chart
+            activityChart.data.labels = labels;
+            activityChart.data.datasets[0].data = data;
+            activityChart.update();
+        }
+
+        function clearActivityChart() {
+            document.getElementById('selectedPlayerInfo').classList.add('hidden');
+            document.getElementById('activityHint').classList.remove('hidden');
+            activityChart.data.labels = [];
+            activityChart.data.datasets[0].data = [];
+            activityChart.update();
+        }
+
+
+        function renderPingStats(searchTerm = '') {
+            // Calculate ping stats for each player
+            const playerPings = {};
+
+            logData.forEach(entry => {
+                (entry.players || []).forEach(player => {
+                    const name = player.name;
+                    if (!playerPings[name]) {
+                        playerPings[name] = {
+                            name: name,
+                            pings: [],
+                        };
+                    }
+                    playerPings[name].pings.push(player.ping);
+                });
+            });
+
+            // Calculate avg, min, max for each player
+            Object.values(playerPings).forEach(p => {
+                p.avg = Math.round(p.pings.reduce((a, b) => a + b, 0) / p.pings.length);
+                p.min = Math.min(...p.pings);
+                p.max = Math.max(...p.pings);
+            });
+
+            // Filter and sort
+            let sorted = Object.values(playerPings);
+            if (searchTerm) {
+                sorted = sorted.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+            }
+            sorted = sorted.sort((a, b) => b.pings.length - a.pings.length).slice(0, 20);
+
+            const container = document.getElementById('pingHistory');
+            container.innerHTML = '';
+
+            if (sorted.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-center py-4">No players found</div>';
+                return;
+            }
+
+            sorted.forEach(player => {
+                const avgClass = player.avg < 50 ? 'text-green-400' : player.avg < 100 ? 'text-yellow-400' : 'text-red-400';
+
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-3 bg-darker/40 rounded-lg px-3 py-2 hover:bg-white/5 transition-colors';
+                div.innerHTML = `
+                    <span class="flex-1 truncate font-medium text-sm">${escapeHtml(player.name)}</span>
+                    <div class="flex gap-3 text-xs font-mono">
+                        <span class="${avgClass}">avg: ${player.avg}ms</span>
+                        <span class="text-gray-400">min: ${player.min}</span>
+                        <span class="text-gray-400">max: ${player.max}</span>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function setupPingSearch() {
+            const input = document.getElementById('pingSearch');
+            input.addEventListener('input', (e) => {
+                renderPingStats(e.target.value);
+            });
+        }
+
+        function renderRecentEntries() {
+            const container = document.getElementById('recentEntries');
+            const recent = logData.slice(-20).reverse();
+
+            recent.forEach(entry => {
+                const date = new Date(entry.timestamp);
+                const dateStr = date.toLocaleString();
+
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between bg-darker/30 rounded px-3 py-1.5';
+                div.innerHTML = `
+                    <span class="text-gray-400">${dateStr}</span>
+                    <span class="text-white font-medium">${entry.clients} players</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        loadData();
+    </script>
+</body>
+
+</html>
